@@ -1,0 +1,52 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+
+# ── Environment variables — NEVER commit ──────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.env
+
+# ── Node / Frontend ───────────────────────────────────────────────────────────
+node_modules/
+oei-nexus-react/dist/
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Tests / Coverage ─────────────────────────────────────────────────────────
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# ── Terraform ────────────────────────────────────────────────────────────────
+infrastructure/terraform/.terraform/
+infrastructure/terraform/*.tfstate
+infrastructure/terraform/*.tfstate.backup
+infrastructure/terraform/terraform.tfvars
+infrastructure/terraform/.terraform.lock.hcl
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Claude Code internal ──────────────────────────────────────────────────────
+.claude/
+
+# ── Logs ────────────────────────────────────────────────────────────────────
+*.log
+logs/

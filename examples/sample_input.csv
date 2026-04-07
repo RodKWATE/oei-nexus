@@ -1,0 +1,6 @@
+property_id,property_type,address,city,province,postal_code,bedrooms,bathrooms,rent,price,year_built
+1,Apartment,123 Main St,Montreal,QC,H1A 0B1,2,1,1200,300000,2010
+2,Condo,456 Elm St,Quebec City,QC,G1B 2C3,1,1,1000,250000,2015
+3,Townhouse,789 Maple Ave,Laval,QC,H7N 3C4,3,2,1500,400000,2005
+4,Duplex,321 Oak St,Gatineau,QC,J8T 4E5,4,2,1800,500000,2000
+5,Triplex,654 Pine St,Longueuil,QC,J4K 5R6,5,3,2200,600000,1995

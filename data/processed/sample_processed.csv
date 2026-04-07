@@ -1,0 +1,13 @@
+, the contents of the file: /quebec-multiunit-analyzer/quebec-multiunit-analyzer/data/processed/sample_processed.csv 
+
+PropertyID,Address,Units,MonthlyRent,AnnualIncome,OperatingExpenses,NetOperatingIncome,CapRate,InvestmentScore
+1,123 Maple St,6,1500,108000,30000,78000,7.2,85
+2,456 Oak St,8,2000,192000,45000,147000,7.7,90
+3,789 Pine St,4,1200,57600,20000,37600,6.5,75
+4,321 Birch St,10,2500,300000,60000,240000,8.0,95
+5,654 Cedar St,5,1800,108000,25000,83000,7.7,88
+6,987 Spruce St,12,2200,316800,70000,246800,8.5,92
+7,135 Elm St,3,1000,36000,15000,21000,5.8,70
+8,246 Willow St,7,1600,134400,35000,99400,6.9,80
+9,369 Fir St,9,2100,226800,50000,176800,7.8,89
+10,159 Aspen St,11,2400,316800,80000,236800,8.3,93

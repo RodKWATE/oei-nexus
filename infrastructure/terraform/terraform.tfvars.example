@@ -1,0 +1,4 @@
+project_id  = "your-gcp-project-id"
+region      = "us-central1"
+db_password = "change-me-strong-password"
+secret_key  = "run: python -c \"import secrets; print(secrets.token_hex(32))\""

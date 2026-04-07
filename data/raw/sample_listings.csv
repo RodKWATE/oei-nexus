@@ -1,0 +1,6 @@
+property_id,property_type,address,city,province,postal_code,price,bedrooms,bathrooms,sqft,year_built,lot_size,description
+1,Duplex,123 Main St,Montreal,QC,H1A 0B1,450000,4,2,2000,1995,3000,"Spacious duplex in a prime location."
+2,Triplex,456 Elm St,Quebec City,QC,G1A 1A1,600000,6,3,2500,2000,4000,"Well-maintained triplex with great rental potential."
+3,Quadruplex,789 Maple Ave,Laval,QC,H7N 2A2,750000,8,4,3000,2010,5000,"Modern quadruplex with high-end finishes."
+4,Apartment,321 Oak St,Gatineau,QC,J8T 3A3,350000,2,1,1200,2015,1500,"Cozy apartment close to amenities."
+5,Duplex,654 Pine St,Longueuil,QC,J4K 1A1,500000,5,3,2200,1990,3500,"Charming duplex with a large backyard."

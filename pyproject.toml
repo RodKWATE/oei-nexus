@@ -1,0 +1,23 @@
+[tool]
+name = "quebec-multiunit-analyzer"
+version = "0.1.0"
+description = "A project for analyzing multi-unit residential properties in Quebec, Canada."
+authors = ["Your Name <your.email@example.com>"]
+license = "MIT"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[project]
+dependencies = [
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "scikit-learn",
+    "jupyter",
+    "pytest"
+]
+
+[tool.poetry.scripts]
+quebec-multiunit-analyzer = "quebec_multiunit.cli:main"
