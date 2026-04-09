@@ -5,7 +5,10 @@
 # =============================================================================
 set -euo pipefail
 
-PROJECT_ID="${PROJECT_ID:-oei-nexus-prod}"
+# Change to the repository root directory to ensure paths resolve correctly
+cd "$(dirname "${BASH_SOURCE[0]}")/../.."
+
+PROJECT_ID="${PROJECT_ID:-cloudnativedemo1}"
 REGION="${REGION:-us-central1}"
 AR_REPO="oei-nexus"
 TAG="${TAG:-latest}"
@@ -14,30 +17,26 @@ REGISTRY="${REGION}-docker.pkg.dev/${PROJECT_ID}/${AR_REPO}"
 
 log() { echo "[build-push] $*"; }
 
-# Authenticate Docker with Artifact Registry
-gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+log "Submitting API and Worker builds to Google Cloud Build..."
+cat <<EOF > /tmp/cloudbuild-api.yaml
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-f', 'Dockerfile.cloudrun', '-t', '${REGISTRY}/api:${TAG}', '.']
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-f', 'Dockerfile.worker', '-t', '${REGISTRY}/worker:${TAG}', '.']
+images:
+- '${REGISTRY}/api:${TAG}'
+- '${REGISTRY}/worker:${TAG}'
+EOF
 
-log "Building API image..."
-docker build \
-  -f oei-nexus-api/Dockerfile.cloudrun \
-  -t "${REGISTRY}/api:${TAG}" \
-  oei-nexus-api
+gcloud builds submit oei-nexus-api \
+  --region="${REGION}" \
+  --config=/tmp/cloudbuild-api.yaml
 
-log "Building Worker image..."
-docker build \
-  -f oei-nexus-api/Dockerfile.worker \
-  -t "${REGISTRY}/worker:${TAG}" \
-  oei-nexus-api
-
-log "Building Frontend image..."
-docker build \
-  -t "${REGISTRY}/frontend:${TAG}" \
-  oei-nexus-react
-
-log "Pushing images..."
-docker push "${REGISTRY}/api:${TAG}"
-docker push "${REGISTRY}/worker:${TAG}"
-docker push "${REGISTRY}/frontend:${TAG}"
+log "Submitting Frontend build to Google Cloud Build..."
+gcloud builds submit oei-nexus-react \
+  --region="${REGION}" \
+  --tag="${REGISTRY}/frontend:${TAG}"
 
 echo ""
 echo "Images pushed:"
