@@ -4,7 +4,23 @@ import KpiCard from '../components/ui/KpiCard'
 import ProgressBar from '../components/ui/ProgressBar'
 import AreaChart from '../components/charts/AreaChart'
 import TimelineChart from '../components/charts/TimelineChart'
+import { useApi } from '../hooks/useApi'
+import { metricsApi } from '../lib/api'
 import { KPIS } from '../data/mockData'
+
+function fmtTonnes(n) {
+  if (n == null) return '—'
+  if (n >= 1e6) return `${(n / 1e6).toFixed(1)}Mt`
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}kt`
+  return `${n}t`
+}
+function fmtNum(n, prefix = '') {
+  if (n == null) return '—'
+  if (n >= 1e9) return `${prefix}${(n / 1e9).toFixed(1)}B`
+  if (n >= 1e6) return `${prefix}${(n / 1e6).toFixed(1)}M`
+  if (n >= 1e3) return `${prefix}${(n / 1e3).toFixed(1)}k`
+  return `${prefix}${n}`
+}
 
 const CO2_REGIONS = [
   { label: '🌍 Sub-Saharan Africa', pct: 31, color: '#26A69A', gradient: 'linear-gradient(90deg,#009688,#4DB6AC)' },
@@ -15,16 +31,31 @@ const CO2_REGIONS = [
 ]
 
 export default function ImpactDashboard() {
+  const { data: agg, loading } = useApi(metricsApi.aggregate, { fallback: null })
+
+  const kpis = agg
+    ? [
+        { label: 'CO₂ Reduced',       value: fmtTonnes(agg.total_co2_avoided_tonnes), change: '+12.4%', up: true,  icon: '🌱' },
+        { label: 'People Served',      value: fmtNum(agg.total_households_connected),  change: '+8.7%',  up: true,  icon: '👥' },
+        { label: 'Jobs Created',       value: fmtNum(agg.total_jobs_created),           change: '+5.2%',  up: true,  icon: '💼' },
+        { label: 'Capital Mobilized',  value: fmtNum(agg.total_investment_usd, '$'),    change: '+21.3%', up: true,  icon: '💰' },
+      ]
+    : KPIS
+
   return (
     <div className="max-w-[1280px] mx-auto px-10 pb-16">
       {/* Header */}
       <div className="flex items-center justify-between py-10 border-b border-white/10 mb-7">
         <div>
           <h1 className="text-[28px] font-extrabold tracking-tight">Live Impact Dashboard</h1>
-          <p className="text-[14.5px] text-slate-500 mt-1.5">Real-time global metrics across all OEI-evaluated projects</p>
+          <p className="text-[14.5px] text-slate-500 mt-1.5">
+            {agg
+              ? `${agg.projects_count} projects across ${agg.countries_count} countries`
+              : 'Real-time global metrics across all OEI-evaluated projects'}
+          </p>
         </div>
         <div className="flex items-center gap-2.5">
-          <Badge variant="green">● Live — Updated 2s ago</Badge>
+          <Badge variant="green">{loading ? '● Updating…' : '● Live — Updated 2s ago'}</Badge>
           <button className="px-4 py-2 rounded-lg text-[13px] text-slate-300 border border-white/10
                              bg-white/5 hover:text-white hover:border-brand-teal transition-colors">
             ⬇ Export Data
@@ -34,7 +65,7 @@ export default function ImpactDashboard() {
 
       {/* KPI Grid */}
       <div className="grid grid-cols-4 gap-5 mb-7">
-        {KPIS.map((k) => <KpiCard key={k.label} {...k} />)}
+        {kpis.map((k) => <KpiCard key={k.label} {...k} />)}
       </div>
 
       {/* Charts row */}

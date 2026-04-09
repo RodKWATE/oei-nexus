@@ -1,7 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
 import Badge from '../components/ui/Badge'
 import ProgressBar from '../components/ui/ProgressBar'
+import { useApi } from '../hooks/useApi'
+import { projectsApi, assessmentsApi } from '../lib/api'
 import { INITIAL_MESSAGES, AI_DIMENSION_SCORES, AI_RECOMMENDATIONS } from '../data/mockData'
+
+const DIM_KEY = ['digitalization','sdg7','finance','inclusion','governance','impact']
 
 function ChatMessage({ msg }) {
   if (msg.role === 'user') {
@@ -47,9 +51,15 @@ function ChatMessage({ msg }) {
 }
 
 export default function AiAdvisor() {
+  const { data: projects } = useApi(projectsApi.list, { fallback: [] })
+  const [selectedProjectId, setSelectedProjectId] = useState(null)
   const [messages, setMessages] = useState(INITIAL_MESSAGES)
   const [input, setInput] = useState('What financing instruments are available for a Gold-level OEI project in Sub-Saharan Africa?')
+  const [assessment, setAssessment] = useState(null)
+  const [submitting, setSubmitting] = useState(false)
   const messagesEndRef = useRef(null)
+
+  const projectId = selectedProjectId ?? projects?.[0]?.id
 
   const handleSend = () => {
     if (!input.trim()) return
@@ -61,6 +71,33 @@ export default function AiAdvisor() {
         text: 'Analyzing your query against the OEI financing framework... For a Gold-level project in Sub-Saharan Africa, you have access to: <strong>Concessional DFI loans</strong> (AfDB, IFC), <strong>Green bonds</strong> (IDA-backed), <strong>Blended finance</strong> through GCERF or SEFA, and <strong>Diaspora bonds</strong> specifically targeting the African diaspora in Europe and North America.'
       }])
     }, 1000)
+  }
+
+  async function handleGenerateReport() {
+    if (!projectId) return
+    setSubmitting(true)
+    try {
+      const dimensionScores = Object.fromEntries(
+        DIM_KEY.map((key, i) => [key, AI_DIMENSION_SCORES[i].score / 100])
+      )
+      const result = await assessmentsApi.create({ project_id: projectId, dimension_scores: dimensionScores })
+      setAssessment(result)
+      setMessages(prev => [...prev, {
+        role: 'bot',
+        scoreEstimate: true,
+        text: 'Assessment submitted and scored by the OEI Engine. Here are your official results:',
+        score: Math.round(result.total_score),
+        level: `${result.oei_level} Level — OEI Certified`,
+        weaknesses: result.recommendations?.slice(0, 3) ?? [],
+      }])
+    } catch {
+      setMessages(prev => [...prev, {
+        role: 'bot',
+        text: 'Unable to submit assessment to the OEI Engine at this time. Please ensure you are signed in and try again.',
+      }])
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   useEffect(() => {
@@ -75,7 +112,20 @@ export default function AiAdvisor() {
           <h1 className="text-[28px] font-extrabold tracking-tight">AI Advisor</h1>
           <p className="text-[14.5px] text-slate-500 mt-1.5">Describe your project — receive instant OEI score estimate and recommendations</p>
         </div>
-        <Badge variant="teal">● Model v2.4 — Online</Badge>
+        <div className="flex items-center gap-3">
+          {projects.length > 0 && (
+            <select
+              value={projectId ?? ''}
+              onChange={(e) => setSelectedProjectId(Number(e.target.value))}
+              className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white
+                         focus:outline-none focus:border-brand-teal/50 cursor-pointer">
+              {projects.map((p) => (
+                <option key={p.id} value={p.id} style={{ background:'#071628' }}>{p.name}</option>
+              ))}
+            </select>
+          )}
+          <Badge variant="teal">● Model v2.4 — Online</Badge>
+        </div>
       </div>
 
       <div className="grid gap-7" style={{ gridTemplateColumns:'1fr 420px' }}>
@@ -137,10 +187,16 @@ export default function AiAdvisor() {
           <div className="glass rounded-2xl p-5.5" style={{ padding:22 }}>
             <div className="text-[13px] font-bold text-slate-400 uppercase tracking-[0.5px] mb-3.5">📊 Score Estimate</div>
             <div className="flex items-center gap-5 mb-4">
-              <span className="text-[48px] font-black text-brand-teal2 tracking-[-2px] leading-none">71</span>
+              <span className="text-[48px] font-black text-brand-teal2 tracking-[-2px] leading-none">
+                {assessment ? Math.round(assessment.total_score) : 71}
+              </span>
               <div>
-                <div className="text-[14px] font-bold" style={{ color:'#FFD54F' }}>✦ Gold Level</div>
-                <div className="text-xs text-slate-500 mt-1">Top 35% globally</div>
+                <div className="text-[14px] font-bold" style={{ color:'#FFD54F' }}>
+                  ✦ {assessment?.oei_level ?? 'Gold'} Level
+                </div>
+                <div className="text-xs text-slate-500 mt-1">
+                  {assessment ? 'OEI Engine certified' : 'Top 35% globally'}
+                </div>
               </div>
             </div>
             <div className="flex flex-col gap-1.5">
@@ -182,8 +238,12 @@ export default function AiAdvisor() {
                 <div className="text-xs text-slate-500">With recommended actions</div>
               </div>
             </div>
-            <button className="w-full py-2.5 rounded-lg text-[13px] font-semibold text-white btn-gradient">
-              Generate Full OEI Report
+            <button
+              onClick={handleGenerateReport}
+              disabled={submitting || !projectId}
+              className="w-full py-2.5 rounded-lg text-[13px] font-semibold text-white btn-gradient
+                         disabled:opacity-50 disabled:cursor-not-allowed transition-opacity">
+              {submitting ? 'Scoring…' : 'Generate Full OEI Report'}
             </button>
           </div>
         </div>

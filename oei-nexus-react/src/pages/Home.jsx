@@ -1,6 +1,15 @@
-import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
+import { useApi } from '../hooks/useApi'
+import { metricsApi } from '../lib/api'
 import { HERO_STATS } from '../data/mockData'
+
+function formatNum(n) {
+  if (n == null) return '—'
+  if (n >= 1e9) return `$${(n / 1e9).toFixed(1)}B`
+  if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}k`
+  return String(n)
+}
 
 const DIM_NODES = [
   { icon: '💻', label: 'Digital',  style: { top: 0, left: '50%', transform: 'translateX(-50%)',       background: 'rgba(0,150,136,0.2)',   border: '1px solid rgba(0,150,136,0.4)' }, delay: '0s' },
@@ -21,6 +30,18 @@ const FEATURES = [
 const PARTNERS = ['🌐 United Nations', '🏦 World Bank', '🌍 African Dev. Bank', '⚡ IRENA', '🤝 UNDP', '📊 IFC', '🏛️ UNECE']
 
 export default function Home({ navigate }) {
+  const { data: agg } = useApi(metricsApi.aggregate, { fallback: null })
+
+  // Build stats from real data when available, fall back to mock
+  const stats = agg
+    ? [
+        { value: String(agg.projects_count),                  label: 'Projects Evaluated' },
+        { value: String(agg.countries_count),                 label: 'Countries' },
+        { value: formatNum(agg.total_investment_usd),         label: 'Capital Mobilized' },
+        { value: formatNum(agg.total_households_connected),   label: 'Lives Impacted' },
+      ]
+    : HERO_STATS
+
   return (
     <div className="relative z-10">
       {/* ── Hero ───────────────────────────────────────────────── */}
@@ -59,7 +80,7 @@ export default function Home({ navigate }) {
               </div>
 
               <div className="flex gap-8 flex-wrap animate-fade-in-up animation-delay-400">
-                {HERO_STATS.map((s) => (
+                {stats.map((s) => (
                   <div key={s.label}>
                     <div className="text-[26px] font-extrabold tracking-tight gradient-text-score">{s.value}</div>
                     <div className="text-[12.5px] text-slate-500 font-medium mt-0.5">{s.label}</div>

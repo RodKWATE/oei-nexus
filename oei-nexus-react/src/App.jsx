@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { AuthProvider } from './context/AuthContext'
 import Navbar from './components/layout/Navbar'
 import Home          from './pages/Home'
 import ScoreDashboard from './pages/ScoreDashboard'
@@ -44,6 +45,7 @@ export default function App() {
   const Page = PAGES[activePage] || Home
 
   return (
+    <AuthProvider>
     <div className="min-h-screen bg-navy-950 text-white font-sans">
       {/* Fixed background */}
       <div className="fixed inset-0 pointer-events-none z-0">
@@ -59,5 +61,6 @@ export default function App() {
         <Page navigate={navigate} />
       </main>
     </div>
+    </AuthProvider>
   )
 }

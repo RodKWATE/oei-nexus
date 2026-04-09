@@ -1,8 +1,49 @@
+import { useState } from 'react'
 import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
 import GlassCard from '../components/ui/GlassCard'
 import ProgressBar from '../components/ui/ProgressBar'
+import { useApi } from '../hooks/useApi'
+import { projectsApi } from '../lib/api'
 import { FINANCE_PROJECTS } from '../data/mockData'
+
+const TYPE_ICON = { solar: '☀️', wind: '🌬️', hydro: '💧', storage: '🔋', hybrid: '⚡', efficiency: '♻️', biomass: '🌿', geothermal: '🌋' }
+const LEVEL_BADGE = {
+  Platinum: { label: '✦ Platinum', style: { background:'rgba(224,224,224,0.1)', color:'#E0E0E0', border:'1px solid rgba(224,224,224,0.2)' } },
+  Gold:     { label: '✦ Gold',     style: { background:'rgba(255,193,7,0.12)', color:'#FFD54F', border:'1px solid rgba(255,193,7,0.2)' } },
+  Silver:   { label: '● Silver',   style: { background:'rgba(144,202,249,0.1)', color:'#90CAF9', border:'1px solid rgba(144,202,249,0.2)' } },
+  Bronze:   { label: '● Bronze',   style: { background:'rgba(206,147,216,0.1)', color:'#CE93D8', border:'1px solid rgba(206,147,216,0.2)' } },
+}
+
+function fmtM(n) {
+  if (n == null) return '—'
+  if (n >= 1e9) return `$${(n / 1e9).toFixed(1)}B`
+  if (n >= 1e6) return `$${(n / 1e6).toFixed(1)}M`
+  if (n >= 1e3) return `$${(n / 1e3).toFixed(0)}k`
+  return `$${n}`
+}
+
+function normaliseProject(p) {
+  const lvl = LEVEL_BADGE[p.oei_level] ?? LEVEL_BADGE.Gold
+  const icon = TYPE_ICON[p.project_type?.toLowerCase()] ?? '⚡'
+  return {
+    id:        p.id,
+    icon,
+    iconBg:    'linear-gradient(135deg,rgba(0,150,136,0.15),rgba(21,101,192,0.15))',
+    badge:     `${lvl.label} ${p.oei_score ?? '—'}`,
+    badgeStyle: lvl.style,
+    name:      p.name,
+    location:  `🌍 ${p.country ?? '—'}`,
+    raised:    fmtM(p.investment_usd ? p.investment_usd * 0.65 : null),
+    goal:      fmtM(p.investment_usd),
+    pct:       65,
+    metrics: [
+      p.co2_avoided_tonnes_yr ? `🌱 −${(p.co2_avoided_tonnes_yr / 1e3).toFixed(0)}k tCO₂/yr` : null,
+      p.households_connected  ? `👥 ${(p.households_connected / 1e3).toFixed(0)}k people`    : null,
+      `⚡ ${p.project_type ?? 'energy'}`,
+    ].filter(Boolean),
+  }
+}
 
 const INVESTOR_MATCHES = [
   { name: 'African Development Bank', pct: 94 },
@@ -19,6 +60,21 @@ const CROWD_STATS = [
 const FINANCE_FILTERS = ['All', 'Gold+', 'Solar', '< $50M', 'Africa']
 
 export default function FinanceHub() {
+  const { data: apiProjects } = useApi(projectsApi.list, { fallback: null })
+  const [activeFilter, setActiveFilter] = useState('All')
+
+  const rawProjects = apiProjects
+    ? apiProjects.map(normaliseProject)
+    : FINANCE_PROJECTS
+
+  const projects = activeFilter === 'All' ? rawProjects : rawProjects.filter((p) => {
+    if (activeFilter === 'Gold+')  return p.badge.includes('Gold') || p.badge.includes('Platinum')
+    if (activeFilter === 'Solar')  return p.icon === '☀️'
+    if (activeFilter === '< $50M') return p.goal && parseFloat(p.goal.replace(/[^0-9.]/g,'')) < 50
+    if (activeFilter === 'Africa') return p.location.includes('Africa') || ['Senegal','Kenya','Egypt','Niger','Nigeria','Ghana'].some((c) => p.location.includes(c))
+    return true
+  })
+
   return (
     <div className="max-w-[1280px] mx-auto px-10 pb-16">
       {/* Header */}
@@ -82,10 +138,10 @@ export default function FinanceHub() {
       <div className="flex items-center justify-between mb-4.5">
         <h3 className="text-[16px] font-bold">Open Investment Opportunities</h3>
         <div className="flex gap-2">
-          {FINANCE_FILTERS.map((f, i) => (
-            <button key={f}
+          {FINANCE_FILTERS.map((f) => (
+            <button key={f} onClick={() => setActiveFilter(f)}
               className={`px-3 py-1 rounded-full text-[11.5px] font-medium border transition-all duration-200
-                ${i === 0
+                ${activeFilter === f
                   ? 'bg-[rgba(0,150,136,0.15)] border-brand-teal text-brand-teal3'
                   : 'bg-white/5 border-white/10 text-slate-400 hover:border-brand-teal hover:text-brand-teal3'}`}>
               {f}
@@ -95,8 +151,8 @@ export default function FinanceHub() {
       </div>
 
       <div className="grid grid-cols-3 gap-5 mb-8">
-        {FINANCE_PROJECTS.map((p) => (
-          <div key={p.name}
+        {projects.map((p) => (
+          <div key={p.id ?? p.name}
             className="glass rounded-2xl p-6 cursor-pointer transition-all duration-200
                        hover:border-[rgba(0,150,136,0.35)] hover:-translate-y-1 hover:shadow-xl">
             <div className="flex items-center gap-2 mb-3.5">
