@@ -247,19 +247,55 @@ gcloud run deploy oei-frontend \
 FRONTEND_URL=$(gcloud run services describe oei-frontend --region="$REGION" --format="value(status.url)")
 success "Frontend deployed: $FRONTEND_URL"
 
+# ─── 14. Seed database ────────────────────────────────────────────────────────
+step "Running database seed..."
+gcloud run jobs create oei-seed \
+  --image="${REGISTRY}/api:latest" \
+  --region="$REGION" \
+  --service-account="$SA_EMAIL" \
+  --vpc-connector="$VPC_CONNECTOR" \
+  --set-cloudsql-instances="$CLOUD_SQL_CONN" \
+  --command="python" \
+  --args="scripts/seed.py" \
+  --set-secrets="\
+DATABASE_URL=oei-db-url:latest,\
+FIRST_SUPERUSER_EMAIL=oei-admin-email:latest,\
+FIRST_SUPERUSER_PASSWORD=oei-admin-password:latest" \
+  --set-env-vars="ENVIRONMENT=production" \
+  --max-retries=1 \
+  --quiet 2>/dev/null || warn "Seed job already exists"
+
+gcloud run jobs execute oei-seed --region="$REGION" --wait
+ok "Database seeded"
+
+# ─── 15. Cloud Build trigger (GitHub → auto-deploy) ──────────────────────────
+step "Creating Cloud Build trigger (GitHub push → deploy)..."
+warn "You need to connect GitHub first in the console — see guide below."
+warn "Then run this command to create the trigger:"
+echo ""
+echo "  gcloud builds triggers create github \\"
+echo "    --repo-name=$GITHUB_REPO \\"
+echo "    --repo-owner=$GITHUB_OWNER \\"
+echo "    --branch-pattern='^main$' \\"
+echo "    --build-config=infrastructure/cloudbuild.yaml \\"
+echo "    --name=oei-deploy-main \\"
+echo "    --region=global"
+echo ""
+
 # ─── Summary ─────────────────────────────────────────────────────────────────
 echo ""
-echo "═══════════════════════════════════════════════"
-echo "  OEI Nexus — Deployment complete"
-echo "═══════════════════════════════════════════════"
-echo "  Frontend :  $FRONTEND_URL"
-echo "  API      :  $API_URL"
-echo "  API Docs :  (production: docs disabled)"
+echo -e "${GRN}═══════════════════════════════════════════════════════${NC}"
+echo -e "${GRN}  OEI Nexus — Provisioning complete!${NC}"
+echo -e "${GRN}═══════════════════════════════════════════════════════${NC}"
+echo -e "  Frontend  : ${YLW}$FRONTEND_URL${NC}"
+echo -e "  API       : ${YLW}$API_URL${NC}"
+echo -e "  API Docs  : ${YLW}$API_URL/docs${NC}  ← désactivé en production"
 echo ""
-echo "  Admin credentials stored in Secret Manager:"
-echo "    Email    : $ADMIN_EMAIL"
-echo "    Password : (see Secret Manager → oei-admin-password)"
+echo -e "  Admin     : ${YLW}$ADMIN_EMAIL${NC}"
+echo -e "  Password  : voir Secret Manager → ${YLW}oei-admin-password${NC}"
 echo ""
-echo "  Next: configure a custom domain in Cloud Run console"
-echo "         and update ALLOWED_ORIGINS in the API."
-echo "═══════════════════════════════════════════════"
+echo -e "${RED}  ⚠ SAUVEGARDE ces infos — elles ne seront plus affichées:${NC}"
+echo "    DB_PASSWORD  = $DB_PASSWORD"
+echo "    SECRET_KEY   = $SECRET_KEY"
+echo "    ADMIN_PASS   = $ADMIN_PASSWORD"
+echo -e "${GRN}═══════════════════════════════════════════════════════${NC}"
